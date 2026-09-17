@@ -1,0 +1,451 @@
+@@ -1,300 +1,300 @@
+-alpha_line_0
++beta_line_0
+ shared_line_1
+-alpha_line_2
++beta_line_2
+ shared_line_3
+-alpha_line_4
++beta_line_4
+ shared_line_5
+-alpha_line_6
++beta_line_6
+ shared_line_7
+-alpha_line_8
++beta_line_8
+ shared_line_9
+-alpha_line_10
++beta_line_10
+ shared_line_11
+-alpha_line_12
++beta_line_12
+ shared_line_13
+-alpha_line_14
++beta_line_14
+ shared_line_15
+-alpha_line_16
++beta_line_16
+ shared_line_17
+-alpha_line_18
++beta_line_18
+ shared_line_19
+-alpha_line_20
++beta_line_20
+ shared_line_21
+-alpha_line_22
++beta_line_22
+ shared_line_23
+-alpha_line_24
++beta_line_24
+ shared_line_25
+-alpha_line_26
++beta_line_26
+ shared_line_27
+-alpha_line_28
++beta_line_28
+ shared_line_29
+-alpha_line_30
++beta_line_30
+ shared_line_31
+-alpha_line_32
++beta_line_32
+ shared_line_33
+-alpha_line_34
++beta_line_34
+ shared_line_35
+-alpha_line_36
++beta_line_36
+ shared_line_37
+-alpha_line_38
++beta_line_38
+ shared_line_39
+-alpha_line_40
++beta_line_40
+ shared_line_41
+-alpha_line_42
++beta_line_42
+ shared_line_43
+-alpha_line_44
++beta_line_44
+ shared_line_45
+-alpha_line_46
++beta_line_46
+ shared_line_47
+-alpha_line_48
++beta_line_48
+ shared_line_49
+-alpha_line_50
++beta_line_50
+ shared_line_51
+-alpha_line_52
++beta_line_52
+ shared_line_53
+-alpha_line_54
++beta_line_54
+ shared_line_55
+-alpha_line_56
++beta_line_56
+ shared_line_57
+-alpha_line_58
++beta_line_58
+ shared_line_59
+-alpha_line_60
++beta_line_60
+ shared_line_61
+-alpha_line_62
++beta_line_62
+ shared_line_63
+-alpha_line_64
++beta_line_64
+ shared_line_65
+-alpha_line_66
++beta_line_66
+ shared_line_67
+-alpha_line_68
++beta_line_68
+ shared_line_69
+-alpha_line_70
++beta_line_70
+ shared_line_71
+-alpha_line_72
++beta_line_72
+ shared_line_73
+-alpha_line_74
++beta_line_74
+ shared_line_75
+-alpha_line_76
++beta_line_76
+ shared_line_77
+-alpha_line_78
++beta_line_78
+ shared_line_79
+-alpha_line_80
++beta_line_80
+ shared_line_81
+-alpha_line_82
++beta_line_82
+ shared_line_83
+-alpha_line_84
++beta_line_84
+ shared_line_85
+-alpha_line_86
++beta_line_86
+ shared_line_87
+-alpha_line_88
++beta_line_88
+ shared_line_89
+-alpha_line_90
++beta_line_90
+ shared_line_91
+-alpha_line_92
++beta_line_92
+ shared_line_93
+-alpha_line_94
++beta_line_94
+ shared_line_95
+-alpha_line_96
++beta_line_96
+ shared_line_97
+-alpha_line_98
++beta_line_98
+ shared_line_99
+-alpha_line_100
++beta_line_100
+ shared_line_101
+-alpha_line_102
++beta_line_102
+ shared_line_103
+-alpha_line_104
++beta_line_104
+ shared_line_105
+-alpha_line_106
++beta_line_106
+ shared_line_107
+-alpha_line_108
++beta_line_108
+ shared_line_109
+-alpha_line_110
++beta_line_110
+ shared_line_111
+-alpha_line_112
++beta_line_112
+ shared_line_113
+-alpha_line_114
++beta_line_114
+ shared_line_115
+-alpha_line_116
++beta_line_116
+ shared_line_117
+-alpha_line_118
++beta_line_118
+ shared_line_119
+-alpha_line_120
++beta_line_120
+ shared_line_121
+-alpha_line_122
++beta_line_122
+ shared_line_123
+-alpha_line_124
++beta_line_124
+ shared_line_125
+-alpha_line_126
++beta_line_126
+ shared_line_127
+-alpha_line_128
++beta_line_128
+ shared_line_129
+-alpha_line_130
++beta_line_130
+ shared_line_131
+-alpha_line_132
++beta_line_132
+ shared_line_133
+-alpha_line_134
++beta_line_134
+ shared_line_135
+-alpha_line_136
++beta_line_136
+ shared_line_137
+-alpha_line_138
++beta_line_138
+ shared_line_139
+-alpha_line_140
++beta_line_140
+ shared_line_141
+-alpha_line_142
++beta_line_142
+ shared_line_143
+-alpha_line_144
++beta_line_144
+ shared_line_145
+-alpha_line_146
++beta_line_146
+ shared_line_147
+-alpha_line_148
++beta_line_148
+ shared_line_149
+-alpha_line_150
++beta_line_150
+ shared_line_151
+-alpha_line_152
++beta_line_152
+ shared_line_153
+-alpha_line_154
++beta_line_154
+ shared_line_155
+-alpha_line_156
++beta_line_156
+ shared_line_157
+-alpha_line_158
++beta_line_158
+ shared_line_159
+-alpha_line_160
++beta_line_160
+ shared_line_161
+-alpha_line_162
++beta_line_162
+ shared_line_163
+-alpha_line_164
++beta_line_164
+ shared_line_165
+-alpha_line_166
++beta_line_166
+ shared_line_167
+-alpha_line_168
++beta_line_168
+ shared_line_169
+-alpha_line_170
++beta_line_170
+ shared_line_171
+-alpha_line_172
++beta_line_172
+ shared_line_173
+-alpha_line_174
++beta_line_174
+ shared_line_175
+-alpha_line_176
++beta_line_176
+ shared_line_177
+-alpha_line_178
++beta_line_178
+ shared_line_179
+-alpha_line_180
++beta_line_180
+ shared_line_181
+-alpha_line_182
++beta_line_182
+ shared_line_183
+-alpha_line_184
++beta_line_184
+ shared_line_185
+-alpha_line_186
++beta_line_186
+ shared_line_187
+-alpha_line_188
++beta_line_188
+ shared_line_189
+-alpha_line_190
++beta_line_190
+ shared_line_191
+-alpha_line_192
++beta_line_192
+ shared_line_193
+-alpha_line_194
++beta_line_194
+ shared_line_195
+-alpha_line_196
++beta_line_196
+ shared_line_197
+-alpha_line_198
++beta_line_198
+ shared_line_199
+-alpha_line_200
++beta_line_200
+ shared_line_201
+-alpha_line_202
++beta_line_202
+ shared_line_203
+-alpha_line_204
++beta_line_204
+ shared_line_205
+-alpha_line_206
++beta_line_206
+ shared_line_207
+-alpha_line_208
++beta_line_208
+ shared_line_209
+-alpha_line_210
++beta_line_210
+ shared_line_211
+-alpha_line_212
++beta_line_212
+ shared_line_213
+-alpha_line_214
++beta_line_214
+ shared_line_215
+-alpha_line_216
++beta_line_216
+ shared_line_217
+-alpha_line_218
++beta_line_218
+ shared_line_219
+-alpha_line_220
++beta_line_220
+ shared_line_221
+-alpha_line_222
++beta_line_222
+ shared_line_223
+-alpha_line_224
++beta_line_224
+ shared_line_225
+-alpha_line_226
++beta_line_226
+ shared_line_227
+-alpha_line_228
++beta_line_228
+ shared_line_229
+-alpha_line_230
++beta_line_230
+ shared_line_231
+-alpha_line_232
++beta_line_232
+ shared_line_233
+-alpha_line_234
++beta_line_234
+ shared_line_235
+-alpha_line_236
++beta_line_236
+ shared_line_237
+-alpha_line_238
++beta_line_238
+ shared_line_239
+-alpha_line_240
++beta_line_240
+ shared_line_241
+-alpha_line_242
++beta_line_242
+ shared_line_243
+-alpha_line_244
++beta_line_244
+ shared_line_245
+-alpha_line_246
++beta_line_246
+ shared_line_247
+-alpha_line_248
++beta_line_248
+ shared_line_249
+-alpha_line_250
++beta_line_250
+ shared_line_251
+-alpha_line_252
++beta_line_252
+ shared_line_253
+-alpha_line_254
++beta_line_254
+ shared_line_255
+-alpha_line_256
++beta_line_256
+ shared_line_257
+-alpha_line_258
++beta_line_258
+ shared_line_259
+-alpha_line_260
++beta_line_260
+ shared_line_261
+-alpha_line_262
++beta_line_262
+ shared_line_263
+-alpha_line_264
++beta_line_264
+ shared_line_265
+-alpha_line_266
++beta_line_266
+ shared_line_267
+-alpha_line_268
++beta_line_268
+ shared_line_269
+-alpha_line_270
++beta_line_270
+ shared_line_271
+-alpha_line_272
++beta_line_272
+ shared_line_273
+-alpha_line_274
++beta_line_274
+ shared_line_275
+-alpha_line_276
++beta_line_276
+ shared_line_277
+-alpha_line_278
++beta_line_278
+ shared_line_279
+-alpha_line_280
++beta_line_280
+ shared_line_281
+-alpha_line_282
++beta_line_282
+ shared_line_283
+-alpha_line_284
++beta_line_284
+ shared_line_285
+-alpha_line_286
++beta_line_286
+ shared_line_287
+-alpha_line_288
++beta_line_288
+ shared_line_289
+-alpha_line_290
++beta_line_290
+ shared_line_291
+-alpha_line_292
++beta_line_292
+ shared_line_293
+-alpha_line_294
++beta_line_294
+ shared_line_295
+-alpha_line_296
++beta_line_296
+ shared_line_297
+-alpha_line_298
++beta_line_298
+ shared_line_299

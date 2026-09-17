@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/source/">
+    <Project Path="source/Xdiff/Xdiff.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Xdiff.UnitTests/Xdiff.UnitTests.csproj" />
+  </Folder>
+</Solution>

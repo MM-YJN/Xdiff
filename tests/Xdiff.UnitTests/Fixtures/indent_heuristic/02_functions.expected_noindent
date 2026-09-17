@@ -1,0 +1,12 @@
+@@ -1,6 +1,11 @@
+ 1
+ 2
+ /* function */
++bar() {
++    foo
++}
++
++/* function */
+ foo() {
+     foo
+ }
