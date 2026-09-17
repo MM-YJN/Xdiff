@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <NoWarn>$(NoWarn);CA1502;CA1506</NoWarn>
     <Authors>Yi Jin</Authors>
     <Description>A managed C# port of xdiff providing structured and unified diffs and three-way merges.</Description>
