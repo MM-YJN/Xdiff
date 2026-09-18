@@ -243,7 +243,7 @@ public class XDiffFacadeTests
         DiffResult result = Diff.Compute(oldData, newData, opts);
 
         DiffHunk hunk = Assert.Single(result.Hunks);
-        Assert.Equal("def foo():"u8.ToArray(), hunk.FunctionName!.Value.ToArray());
+        Assert.Equal("def foo():"u8.ToArray(), hunk.FunctionName.ToArray());
     }
 
     [Fact]
@@ -286,8 +286,105 @@ public class XDiffFacadeTests
     [Fact]
     public void UnifiedDiff_ByteOverload_ReturnsBytes()
     {
-        byte[] bytes = Diff.UnifiedDiff("a\n"u8, "b\n"u8);
+        byte[] bytes = Diff.UnifiedDiff("a\n"u8.ToArray(), "b\n"u8.ToArray());
         Assert.Equal(Encoding.UTF8.GetBytes("@@ -1 +1 @@\n-a\n+b\n"), bytes);
+    }
+
+    [Theory]
+    [InlineData("a\nb\nc\n", "a\nB\nc\n")]
+    [InlineData("a", "b")]
+    [InlineData("", "a\nb\n")]
+    [InlineData("a\nb\nc\n", "")]
+    [InlineData("1\n2\n3\n4\n5\n6\n7\n8\n9\n", "A\n2\n3\n4\n5\n6\n7\n8\nB\n")]
+    public void UnifiedDiff_WriterOverload_MatchesByteOverload(string oldText, string newText)
+    {
+        byte[] oldBytes = Encoding.UTF8.GetBytes(oldText);
+        byte[] newBytes = Encoding.UTF8.GetBytes(newText);
+        byte[] expected = Diff.UnifiedDiff(oldBytes, newBytes);
+
+        var writer = new ArrayBufferWriter<byte>();
+        Diff.UnifiedDiff(writer, oldBytes, newBytes);
+
+        Assert.Equal(expected, writer.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public void UnifiedDiff_WriterOverload_FunctionNames_MatchesByteOverload()
+    {
+        var opts = new DiffOptions { IncludeFunctionNames = true };
+        string oldText = "def foo():\n    a = 1\n    b = 2\n    c = 3\n    x = 1\n";
+        string newText = "def foo():\n    a = 1\n    b = 2\n    c = 3\n    x = 2\n";
+        byte[] oldBytes = Encoding.UTF8.GetBytes(oldText);
+        byte[] newBytes = Encoding.UTF8.GetBytes(newText);
+        byte[] expected = Diff.UnifiedDiff(oldBytes, newBytes, opts);
+
+        var writer = new ArrayBufferWriter<byte>();
+        Diff.UnifiedDiff(writer, oldBytes, newBytes, opts);
+
+        Assert.Equal(expected, writer.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public void UnifiedDiff_WriterOverload_AppendsToExistingContent()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        writer.Write("prefix"u8);
+
+        Diff.UnifiedDiff(writer, "a\n"u8.ToArray(), "b\n"u8.ToArray());
+
+        Assert.Equal("prefix@@ -1 +1 @@\n-a\n+b\n"u8.ToArray(), writer.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public void UnifiedDiff_WriterOverload_IdenticalInputs_WritesNothing()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+
+        Diff.UnifiedDiff(writer, "same\n"u8.ToArray(), "same\n"u8.ToArray());
+
+        Assert.Empty(writer.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public void UnifiedDiff_WriterOverload_NullWriter_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => Diff.UnifiedDiff((IBufferWriter<byte>)null!, "a\n"u8.ToArray(), "b\n"u8.ToArray()));
+    }
+
+    [Fact]
+    public void UnifiedDiff_StringOverload_NonAscii_MatchesByteOverload()
+    {
+        // Exercises the pooled-rent path in UnifiedDiff(string, string): the
+        // UTF-8 byte count differs from the char count, so the encoded ranges
+        // must be truncated to the number of bytes actually written.
+        string oldText = "café 中文 🙂\n    a = 1\n";
+        string newText = "café 中文 🙂\n    a = 2\n";
+
+        byte[] expected = Diff.UnifiedDiff(
+            Encoding.UTF8.GetBytes(oldText),
+            Encoding.UTF8.GetBytes(newText));
+
+        Assert.Equal(expected, Encoding.UTF8.GetBytes(Diff.UnifiedDiff(oldText, newText)));
+    }
+
+    [Fact]
+    public void Compute_WithoutFunctionNames_FunctionNameIsEmpty()
+    {
+        DiffResult result = Diff.Compute("a\nb\n"u8.ToArray(), "a\nB\n"u8.ToArray());
+
+        DiffHunk hunk = Assert.Single(result.Hunks);
+        Assert.True(hunk.FunctionName.IsEmpty);
+    }
+
+    [Fact]
+    public void UnifiedDiff_IncludeFunctionNames_NoMatchingLine_OmitsFuncname()
+    {
+        // No line matches the default matcher, so the header must end at "@@"
+        // with no trailing space (the empty-funcname guard).
+        var opts = new DiffOptions { IncludeFunctionNames = true };
+        string output = Diff.UnifiedDiff("    a = 1\n    b = 2\n", "    a = 1\n    b = 3\n", opts);
+        Assert.Equal("@@ -1,2 +1,2 @@\n     a = 1\n-    b = 2\n+    b = 3\n", output);
     }
 
     [Fact]

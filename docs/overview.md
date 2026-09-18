@@ -39,9 +39,9 @@ Two static facades, both in the `Xdiff` namespace:
 | `Xdiff.Diff` | Two-way diff (old vs. new) | `Diff.Compute`, `Diff.UnifiedDiff` |
 | `Xdiff.Merger` | Three-way merge (ancestor / ours / theirs) | `Merger.Merge` |
 
-Everything else is option records, enums, and result types. There is no state
-to hold, no handle to dispose, no DI container to wire. You call a method, you
-get a result.
+Options, enums, and result types describe each operation. You can receive a
+result directly, supply an `IBufferWriter<byte>` for output, or derive from
+`Xdiff.Emit.HunkSinkBase` to consume diff callbacks.
 
 ## Reference it
 
@@ -140,40 +140,40 @@ string merged = Merger.Merge("a\nb\nc\n", "a\nX\nc\n", "a\nb\nc\n");
 // "a\nX\nc\n"  (clean: ours is the only side that changed)
 ```
 
-## The mental model: two kinds of output
+## Output and memory ownership
 
-Every Xdiff API returns one of two kinds of output, and the distinction is the
-single most important thing to internalize:
+Byte inputs use `ReadOnlyMemory<byte>`. Keep their memory valid and unmodified
+throughout each synchronous call. Output ownership depends on the overload:
 
 ### 1. Freshly allocated — `UnifiedDiff` and `Merger.Merge`
 
-These methods synthesize a brand-new buffer from scratch. The returned `string`
-or `byte[]` is independent of the input buffers and can outlive them freely.
-Inputs are accepted as `ReadOnlySpan<byte>` (or `string`) because no borrow is
-taken.
+The result-returning overloads synthesize an independent output buffer. The
+returned `string` or `byte[]` can outlive the input buffers freely.
 
 - `Diff.UnifiedDiff(string, string, …) → string`
-- `Diff.UnifiedDiff(ReadOnlySpan<byte>, ReadOnlySpan<byte>, …) → byte[]`
-- `Merger.Merge(ROS<byte>, ROS<byte>, ROS<byte>, …) → MergeResult` (with a fresh
+- `Diff.UnifiedDiff(ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, …) → byte[]`
+- `Merger.Merge(ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, …) → MergeResult` (with a fresh
   `MergeResult.Content` byte array)
 - `Merger.Merge(string, string, string, …) → string`
 
-**No lifetime concerns.** Pass stack-allocated spans, rented arrays, anything
-you like. The result stands on its own.
+Inputs are borrowed only during the call. After it returns, rented input
+arrays may be returned to their pool; the result stands on its own.
 
-### 2. Structured objects with borrowed line data — `Diff.Compute`
+### 2. Structured objects with borrowed data — `Diff.Compute`
 
 `Diff.Compute` returns a `DiffResult` (a tree of `DiffHunk`s, each containing a
 list of `DiffLine`s). The `DiffLine.Content` field is a `ReadOnlyMemory<byte>`
 slice that aliases the caller's input buffer without copying the line bytes.
-Mutating the source buffer after `Compute` returns is observable through the
-result.
+`DiffHunk.FunctionName` also borrows a slice of the old input buffer and is
+empty when no annotation is available. Mutating the source buffer after
+`Compute` returns is observable through these values.
 
 `Compute` takes `ReadOnlyMemory<byte>` so the returned slices can retain
 references to the source memory. Managed arrays remain reachable through
 those slices. Pooled or externally owned memory must remain valid while the
 result is used: do not return it to a pool or dispose its owner during that
-time. Use `line.Content.ToArray()` when you need an independent copy of a line.
+time. Use `line.Content.ToArray()` or `hunk.FunctionName.ToArray()` when you
+need independent copies.
 
 ```csharp
 using Xdiff;
@@ -185,6 +185,20 @@ DiffResult result = Diff.Compute(oldData, newData);
 // Line content borrows from oldData and newData, retaining their backing arrays.
 // Keep the arrays unchanged while consuming the result.
 ```
+
+### 3. Caller-supplied writers and sinks
+
+`Diff.UnifiedDiff(writer, oldData, newData, options)` appends unified-diff bytes
+to an `IBufferWriter<byte>`. `Merger.Merge(writer, ancestor, ours, theirs,
+options)` appends merged bytes and returns the unresolved conflict count.
+The caller owns the writer and manages its output lifetime. Inputs are borrowed
+only during the call; neither method clears or disposes the writer.
+
+`Diff.Compute(sink, oldData, newData, options)` sends hunk and line callbacks to
+an `Xdiff.Emit.HunkSinkBase` subclass without building a `DiffResult`. Callback
+line content and function names borrow input memory. Copy bytes you want to
+retain independently. See the [sink guide](diff-structured.md#streaming-hunks-to-a-sink)
+for callback ordering, state reset, and reuse rules.
 
 ## Synchronous and self-contained
 

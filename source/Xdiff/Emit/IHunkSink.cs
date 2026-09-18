@@ -6,7 +6,7 @@ namespace Xdiff.Emit;
 
 internal interface IHunkSink
 {
-    void HunkHeader(int s1, int c1, int s2, int c2, ReadOnlySpan<byte> func);
+    void HunkHeader(int s1, int c1, int s2, int c2, ReadOnlyMemory<byte> func);
 
     void Line(DiffLineKind kind, ReadOnlyMemory<byte> content, int oldLine, int newLine);
 }

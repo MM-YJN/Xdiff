@@ -6,11 +6,11 @@ namespace Xdiff;
 
 /// <summary>
 /// The merged buffer and the number of unresolved conflicts produced by
-/// <see cref="Merger.Merge(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte}, MergeOptions?)" />.
+/// <see cref="Merger.Merge(ReadOnlyMemory{byte}, ReadOnlyMemory{byte}, ReadOnlyMemory{byte}, MergeOptions?)" />.
 /// </summary>
 /// <param name="Content">
-/// The synthesized merge result as UTF-8 bytes. Always freshly allocated; never
-/// aliases the caller's input.
+/// The synthesized merge result as raw bytes, without UTF-8 conversion. Always freshly allocated;
+/// never aliases the caller's input.
 /// </param>
 /// <param name="ConflictCount">
 /// Number of unresolved conflict regions left in <paramref name="Content" />.

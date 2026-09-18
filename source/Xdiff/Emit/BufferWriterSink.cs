@@ -1,46 +1,21 @@
-/*
- *  LibXDiff by Davide Libenzi ( File Differential Library )
- *  Copyright (C) 2003	Davide Libenzi
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, see
- *  <http://www.gnu.org/licenses/>.
- *
- *  Davide Libenzi <davidel@xmailserver.org>
- *
- */
-
 // Copyright (C) 2026 Yi Jin
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // See LICENSE for license terms and the disclaimer of warranty.
 
-using Xdiff.Util;
+using System.Buffers;
 
 namespace Xdiff.Emit;
 
 /// <summary>
-/// Renders unified-diff text into a pooled byte buffer (the <c>git_buf</c> analogue).
+/// Writes unified-diff text into a caller-supplied <see cref="IBufferWriter{T}" />.
 /// </summary>
 /// <remarks>
-/// The hunk-header/line rendering mirrors <see cref="BufferWriterSink" /> byte-for-byte and must be
-/// kept in sync with it.
+/// The hunk-header/line rendering below mirrors <see cref="StringSink" /> byte-for-byte and must be
+/// kept in sync with it. (A future cleanup could have <c>StringSink</c> delegate to this type, since
+/// its writer is itself an <see cref="IBufferWriter{T}" />.)
 /// </remarks>
-internal sealed class StringSink : IHunkSink, IDisposable
+internal sealed class BufferWriterSink(IBufferWriter<byte> writer) : IHunkSink
 {
-    private readonly PooledByteBufferWriter _writer = new();
-
-    public ReadOnlySpan<byte> BytesWritten => _writer.WrittenSpan;
-
     public void HunkHeader(int s1, int c1, int s2, int c2, ReadOnlyMemory<byte> func)
     {
         int oldStart = c1 != 0 ? s1 + 1 : s1;
@@ -67,36 +42,44 @@ internal sealed class StringSink : IHunkSink, IDisposable
         Append(hdr, ref n, " @@");
         WriteAscii(hdr[..n]);
 
+        Span<byte> span;
         if (!func.IsEmpty)
         {
-            _writer.Write((byte)' ');
-            _writer.Write(func.Span);
+            span = writer.GetSpan(func.Length + 1);
+            span[0] = (byte)' ';
+            func.Span.CopyTo(span.Slice(1));
+            writer.Advance(func.Length + 1);
         }
 
-        _writer.Write((byte)'\n');
+        span = writer.GetSpan(1);
+        span[0] = (byte)'\n';
+        writer.Advance(1);
     }
 
     public void Line(DiffLineKind kind, ReadOnlyMemory<byte> content, int oldLine, int newLine)
     {
-        ReadOnlySpan<byte> span = content.Span;
-        _writer.Write(kind switch
+        ReadOnlySpan<byte> data = content.Span;
+        bool needsEofnlMarker = !data.IsEmpty && data[^1] != '\n';
+
+        Span<byte> span = writer.GetSpan(data.Length + 1);
+
+        span[0] = kind switch
         {
             DiffLineKind.Context => (byte)' ',
             DiffLineKind.Addition => (byte)'+',
             DiffLineKind.Deletion => (byte)'-',
             _ => (byte)' ',
-        });
+        };
+        data.CopyTo(span.Slice(1));
+        writer.Advance(data.Length + 1);
 
-        _writer.Write(span);
-        if (!span.IsEmpty && span[^1] != '\n')
+        // The EOFNL probe reads the logical content span, not the writer's span: GetSpan(n) may
+        // return a span larger than n, whose tail holds unrelated pooled bytes.
+        if (needsEofnlMarker)
         {
-            _writer.Write("\n\\ No newline at end of file\n"u8);
+            writer.Write("\n\\ No newline at end of file\n"u8);
         }
     }
-
-    public byte[] ToBytes() => _writer.WrittenMemory.ToArray();
-
-    public void Dispose() => _writer.Dispose();
 
     private static void Append(Span<char> buf, ref int n, string s)
     {
@@ -114,6 +97,6 @@ internal sealed class StringSink : IHunkSink, IDisposable
             bytes[i] = (byte)chars[i];
         }
 
-        _writer.Write(bytes);
+        writer.Write(bytes);
     }
 }

@@ -445,19 +445,19 @@ Console.Write(Encoding.UTF8.GetString(r.Content));
 
 ### 16. Bytes-in/bytes-out pipeline (no UTF-8 round-trip)
 
-For non-text content or byte-exact workflows, use the `ReadOnlySpan<byte>`
+For non-text content or byte-exact workflows, use the `ReadOnlyMemory<byte>`
 overload and stay in bytes the whole way through:
 
 ```csharp
 using Xdiff;
 
-ReadOnlySpan<byte> ancestor = File.ReadAllBytes("ancestor.dat");
-ReadOnlySpan<byte> ours     = File.ReadAllBytes("ours.dat");
-ReadOnlySpan<byte> theirs   = File.ReadAllBytes("theirs.dat");
+ReadOnlyMemory<byte> ancestor = File.ReadAllBytes("ancestor.dat");
+ReadOnlyMemory<byte> ours     = File.ReadAllBytes("ours.dat");
+ReadOnlyMemory<byte> theirs   = File.ReadAllBytes("theirs.dat");
 
 MergeResult r = Merger.Merge(ancestor, ours, theirs);
 File.WriteAllBytes("merged.dat", r.Content);
-// r.Content is a fresh byte[]; it does not alias the input spans.
+// r.Content is a fresh byte[]; it does not alias the input buffers.
 ```
 
 This avoids any UTF-8 encode/decode overhead and preserves byte-exact output

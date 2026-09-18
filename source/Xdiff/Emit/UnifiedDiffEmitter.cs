@@ -45,7 +45,7 @@ internal static class UnifiedDiffEmitter
         XdFile xdf1 = env.Xdf1;
         XdFile xdf2 = env.Xdf2;
         int funclineprev = -1;
-        ReadOnlySpan<byte> currentFunc = ReadOnlySpan<byte>.Empty;
+        ReadOnlyMemory<byte> currentFunc = ReadOnlyMemory<byte>.Empty;
 
         XdChange? xch = script;
 
@@ -298,19 +298,23 @@ internal static class UnifiedDiffEmitter
         return -1;
     }
 
-    private static ReadOnlySpan<byte> SliceFuncName(XdFile xdf, int ri, DiffOptions? options)
+    private static ReadOnlyMemory<byte> SliceFuncName(XdFile xdf, int ri, DiffOptions? options)
     {
         XdRecord rec = xdf.Recs[ri];
-        ReadOnlySpan<byte> data = xdf.Data.Span;
-        ReadOnlySpan<byte> span = data.Slice(rec.Offset, rec.Length);
+        ReadOnlyMemory<byte> data = xdf.Data;
+        ReadOnlySpan<byte> span = data.Span.Slice(rec.Offset, rec.Length);
 
         // When a name extractor is configured (custom function-name path),
         // use its returned name slice directly. The extractor handles capture-
         // group extraction and trailing-whitespace trimming itself.
         if (options?.FunctionNameExtractor is { } extractor)
         {
-            (bool _, Range nameRange) = extractor(span);
-            return span[nameRange];
+            (bool extracted, Range nameRange) = extractor(span);
+            if (extracted)
+            {
+                data = data.Slice(rec.Offset, rec.Length);
+                return data[nameRange];
+            }
         }
 
         // Default xdiff behavior: use the whole line, trimmed and capped.
@@ -320,7 +324,7 @@ internal static class UnifiedDiffEmitter
             len = MaxFuncLen;
         }
 
-        ReadOnlySpan<byte> trimmed = data.Slice(rec.Offset, len);
+        ReadOnlySpan<byte> trimmed = data.Span.Slice(rec.Offset, len);
         while (len > 0 && Chars.IsSpace(trimmed[len - 1]))
         {
             len--;

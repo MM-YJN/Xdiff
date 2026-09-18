@@ -1,25 +1,31 @@
 # Rendering unified-diff text
 
-Use `Diff.UnifiedDiff` to render unified-diff hunks as a `string` or `byte[]`
-for display, logging, or storage. This is the text-emitting path; for programmatic
-inspection of hunks and lines see [diff-structured.md](diff-structured.md).
+Use `Diff.UnifiedDiff` to render unified-diff hunks as a `string`, `byte[]`, or
+bytes appended to a caller-supplied writer for display, logging, or storage.
+For programmatic inspection of hunks and lines, see
+[diff-structured.md](diff-structured.md).
 
-## The two overloads
+## Overloads
 
 ```csharp
 // UTF-8 string in, UTF-8 string out
 public static string UnifiedDiff(string oldText, string newText, DiffOptions? options = null);
 
 // raw bytes in, raw bytes out
-public static byte[] UnifiedDiff(ReadOnlySpan<byte> oldData, ReadOnlySpan<byte> newData, DiffOptions? options = null);
+public static byte[] UnifiedDiff(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, DiffOptions? options = null);
+
+// raw bytes in, append raw bytes to a caller-owned writer
+public static void UnifiedDiff(IBufferWriter<byte> writer, ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, DiffOptions? options = null);
 ```
 
 | Overload | Use when |
 |---|---|
 | `string` | Inputs are text; you want displayable output. The inputs are UTF-8 encoded internally, the output is UTF-8 decoded. |
 | `byte[]` | Inputs are bytes, possibly not valid UTF-8, and you want to avoid UTF-8 conversion. Processing remains line-based. |
+| `IBufferWriter<byte>` | Append output to your own buffer without allocating a returned patch array. |
 
-Both return an empty `string` / empty `byte[]` when the inputs are identical.
+The result-returning overloads return an empty `string` / empty `byte[]` when
+the inputs are identical. The writer overload writes nothing in that case.
 
 Output contains `@@` hunk headers and prefixed line content, without Git's file
 headers or repository metadata. Consumers requiring complete patches must add
@@ -207,8 +213,27 @@ byte[] patchBytes = Diff.UnifiedDiff(oldBytes, newBytes);
 await File.WriteAllBytesAsync("changes.patch", patchBytes);
 ```
 
-The returned `byte[]` is freshly allocated; it does not alias the input spans.
-Inputs still undergo line-based processing, without automatic binary detection.
+The returned `byte[]` is freshly allocated; it does not alias the inputs.
+Byte inputs are borrowed without copying during rendering. Keep their memory
+valid and unmodified until the call returns. Inputs still undergo line-based
+processing, without automatic binary detection.
+
+## Writing to a buffer
+
+```csharp
+using System.Buffers;
+using Xdiff;
+
+var writer = new ArrayBufferWriter<byte>();
+Diff.UnifiedDiff(writer, "a\n"u8.ToArray(), "b\n"u8.ToArray());
+ReadOnlyMemory<byte> patch = writer.WrittenMemory;
+```
+
+Output is appended to any existing content. Xdiff does not clear or dispose the
+writer; the caller owns its storage and lifetime. Writing completes before the
+method returns. Do not write to the same writer concurrently or let output
+writes modify borrowed input memory. If writing throws, the exception propagates
+and bytes already appended remain; output is not rolled back.
 
 ## When to use this vs. `Diff.Compute`
 
@@ -221,4 +246,6 @@ Inputs still undergo line-based processing, without automatic binary detection.
 
 `UnifiedDiff` is simpler and faster to consume when you just need the text.
 `Compute` gives you structured `DiffHunk` / `DiffLine` objects you can walk in
-code, at the cost of allocating a per-line `byte[]` for each emitted line.
+code. It allocates result objects and collections while borrowing line and
+function-name bytes. Its sink overload delivers callbacks without building
+those result collections.

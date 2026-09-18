@@ -13,9 +13,9 @@ internal sealed class StructuredSink : IHunkSink
     private int _oldCount;
     private int _newStart;
     private int _newCount;
-    private ReadOnlyMemory<byte>? _func;
+    private ReadOnlyMemory<byte> _func;
 
-    public void HunkHeader(int s1, int c1, int s2, int c2, ReadOnlySpan<byte> func)
+    public void HunkHeader(int s1, int c1, int s2, int c2, ReadOnlyMemory<byte> func)
     {
         if (_started)
         {
@@ -26,7 +26,7 @@ internal sealed class StructuredSink : IHunkSink
         _oldCount = c1;
         _newStart = c2 != 0 ? s2 + 1 : s2;
         _newCount = c2;
-        _func = func.IsEmpty ? null : func.ToArray();
+        _func = func;
         _lines.Clear();
         _started = true;
     }

@@ -90,7 +90,46 @@ foreach (DiffHunk hunk in result.Hunks)
 }
 ```
 
-Line numbers are 1-based; `OldLine` is `0` for additions and `NewLine` is `0` for deletions. `result.IsEmpty` indicates that no hunks were emitted. Line content borrows from the input buffers, so do not modify those buffers while consuming the result.
+Line numbers are 1-based; `OldLine` is `0` for additions and `NewLine` is `0` for deletions. `result.IsEmpty` indicates that no hunks were emitted. Line content and function-name annotations borrow from the input buffers (annotations use the old buffer), so keep their memory valid and unmodified while consuming the result. `hunk.FunctionName` is empty when no annotation is available; use `.ToArray()` for an independent copy.
+
+To stream hunks, derive from `Xdiff.Emit.HunkSinkBase` and call
+`Diff.Compute(sink, oldData, newData, options)`. The sink receives `BeginHunk`,
+`Line`, and `EndHunk` callbacks, with hunk properties available throughout
+`EndHunk`. After success or failure, base-class coordinates reset to zero and
+the borrowed `Func` memory becomes empty. If a callback throws, no further
+callbacks run, no cleanup or retry of `EndHunk` occurs, and the original
+exception propagates. Partial callback effects remain; subclasses manage their
+own retained state before reuse. Concurrent or recursive use of the same sink
+is unsupported. See the [structured-diff guide](https://github.com/MM-YJN/Xdiff/blob/main/docs/diff-structured.md#streaming-hunks-to-a-sink).
+
+## Write output to your own buffer
+
+The byte overloads accept `ReadOnlyMemory<byte>` inputs. Pass an
+`IBufferWriter<byte>` first to append output without allocating a returned byte
+array:
+
+```csharp
+using System.Buffers;
+using Xdiff;
+
+var patchWriter = new ArrayBufferWriter<byte>();
+Diff.UnifiedDiff(patchWriter, "a\n"u8.ToArray(), "b\n"u8.ToArray());
+ReadOnlyMemory<byte> patchBytes = patchWriter.WrittenMemory;
+
+var mergeWriter = new ArrayBufferWriter<byte>();
+int conflicts = Merger.Merge(
+    mergeWriter,
+    "a\n"u8.ToArray(),
+    "ours\n"u8.ToArray(),
+    "theirs\n"u8.ToArray());
+ReadOnlyMemory<byte> mergedBytes = mergeWriter.WrittenMemory;
+```
+
+Inputs are borrowed during these synchronous calls; keep them valid and
+unmodified until the call returns. You own the writer and its output lifetime.
+Existing content is preserved, and Xdiff never clears or disposes the writer.
+The diff writer emits nothing for identical inputs; the merge writer emits the
+input verbatim. The merge return value counts unresolved conflicts.
 
 ## Merge independent edits
 

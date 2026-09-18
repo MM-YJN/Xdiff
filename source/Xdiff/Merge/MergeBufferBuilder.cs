@@ -24,6 +24,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // See LICENSE for license terms and the disclaimer of warranty.
 
+using System.Buffers;
 using System.Diagnostics;
 
 using Xdiff.Core;
@@ -34,7 +35,8 @@ internal static class MergeBufferBuilder
 {
     private const int DefaultConflictMarkerSize = 7;
 
-    internal static byte[] Fill(
+    internal static void Fill(
+        IBufferWriter<byte> writer,
         XdfEnv xe1,
         XdfEnv xe2,
         XdMerge? head,
@@ -45,9 +47,9 @@ internal static class MergeBufferBuilder
         byte[]? ancestorName)
     {
         int size = FillLoop(xe1, xe2, head, style, markerSize, name1, name2, ancestorName, default, false);
-        byte[] buffer = new byte[size];
+        Span<byte> buffer = writer.GetSpan(size);
         FillLoop(xe1, xe2, head, style, markerSize, name1, name2, ancestorName, buffer, true);
-        return buffer;
+        writer.Advance(size);
     }
 
     private static int FillLoop(

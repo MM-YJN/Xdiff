@@ -13,9 +13,9 @@ evidence, see [Compatibility and reference testing](overview.md#compatibility-an
 
 ```csharp
 public static MergeResult Merge(
-    ReadOnlySpan<byte> ancestor,
-    ReadOnlySpan<byte> ours,
-    ReadOnlySpan<byte> theirs,
+    ReadOnlyMemory<byte> ancestor,
+    ReadOnlyMemory<byte> ours,
+    ReadOnlyMemory<byte> theirs,
     MergeOptions? options = null);
 
 public static string Merge(
@@ -34,17 +34,54 @@ public static string Merge(
 Order is positional — no labels are required for the merge itself. Labels
 (when set on `MergeOptions`) only decorate the conflict markers in the output.
 
-## The two overloads
+## Overloads
 
 | Overload | Returns | When to use |
 |---|---|---|
-| `ReadOnlySpan<byte>` | `MergeResult` (with `byte[] Content` + `int ConflictCount`) | Line-based processing of bytes without a UTF-8 round-trip; no automatic binary detection. |
+| `ReadOnlyMemory<byte>` | `MergeResult` (with `byte[] Content` + `int ConflictCount`) | Line-based processing of bytes without a UTF-8 round-trip; no automatic binary detection. |
 | `string` | `string` (the merged text) | Inputs are text; you want displayable output. Internally UTF-8 encodes, merges, UTF-8 decodes. |
+| `IBufferWriter<byte>` plus byte memories | `int` (unresolved conflict count) | Append merged bytes to caller-owned storage. |
 
 `MergeResult.Content` is a **freshly allocated** `byte[]`. It never aliases the
-input spans — the merge synthesizes a new buffer from possibly-conflicting
-regions. Pass stack-allocated spans, rented arrays, anything you like; the
-result stands on its own.
+input buffers. Inputs are borrowed during the call: keep their memory valid
+and unmodified until it returns. The result stands on its own, so rented input
+arrays can then be returned to their pool.
+
+### Writing to a buffer
+
+```csharp
+public static int Merge(
+    IBufferWriter<byte> writer,
+    ReadOnlyMemory<byte> ancestor,
+    ReadOnlyMemory<byte> ours,
+    ReadOnlyMemory<byte> theirs,
+    MergeOptions? options = null);
+```
+
+The writer overload appends merged bytes and returns the number of unresolved
+conflicts, including `0` when `Favor` resolves all conflicts. It produces the
+same bytes as the `MergeResult` overload.
+
+```csharp
+using System.Buffers;
+using Xdiff;
+
+var writer = new ArrayBufferWriter<byte>();
+int conflicts = Merger.Merge(
+    writer,
+    "a\n"u8.ToArray(),
+    "ours\n"u8.ToArray(),
+    "theirs\n"u8.ToArray());
+ReadOnlyMemory<byte> merged = writer.WrittenMemory;
+Console.WriteLine($"Unresolved conflicts: {conflicts}");
+```
+
+Xdiff preserves existing writer content and never clears or disposes the writer.
+The caller manages its storage and lifetime, and writing finishes before the
+method returns. Keep inputs valid and unmodified during the call, including by
+output writes, and do not write to the same writer concurrently. If writing
+throws, the exception propagates; already appended bytes are not rolled back.
+Identical inputs are written verbatim; three empty inputs append no bytes.
 
 ## Clean merges
 
@@ -53,8 +90,9 @@ cover most real-world clean merges:
 
 ### One side changed, the other equals the ancestor (fast path)
 
-If one side is identical to the ancestor, the other side is returned as-is —
-no diffing needed. This is the fast path in `Merger.cs:53`.
+After computing both diffs, if one side has no changes against the ancestor,
+the fast path copies the other side verbatim into the result or writer and
+returns zero conflicts.
 
 ```csharp
 using Xdiff;

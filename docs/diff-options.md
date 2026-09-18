@@ -190,7 +190,7 @@ See [diff-text.md](diff-text.md#controlling-hunk-shape) for the worked examples.
   `2 * ContextLines + InterHunkLines`.
 
 Both properties accept `0` through `int.MaxValue`, inclusive. Options can be
-constructed with any value, but `Diff.Compute` and both `Diff.UnifiedDiff`
+constructed with any value, but all `Diff.Compute` and `Diff.UnifiedDiff`
 overloads reject negative values with `ArgumentOutOfRangeException` before
 processing inputs, even when inputs are empty or identical. `ParamName` names
 the invalid property and `ActualValue` contains its supplied value.
@@ -220,7 +220,7 @@ var opts = new DiffOptions { IncludeFunctionNames = true };
 DiffResult result = Diff.Compute(oldData, newData, opts);
 DiffHunk hunk = result.Hunks[0];
 // hunk.FunctionName is the raw bytes of "def foo():" (undecoded)
-Assert.Equal("def foo():"u8.ToArray(), hunk.FunctionName!.Value.ToArray());
+Assert.Equal("def foo():"u8.ToArray(), hunk.FunctionName.ToArray());
 
 string text = Diff.UnifiedDiff(
     "def foo():\n    a = 1\n    b = 2\n    c = 3\n    x = 1\n",
@@ -302,8 +302,9 @@ Per-language function-name regexes can extract
 extractor delegate returns a `Range` into the input span instead.
 
 The returned `Range` may cover any slice of the input — a capture group, the
-whole line, or a fresh substring. The emitter copies those bytes into the
-hunk's `FunctionName`.
+whole line, or a substring. The hunk's `FunctionName` borrows that slice of the
+old input buffer without copying. Keep its memory valid and unmodified while
+using the result, or call `FunctionName.ToArray()` for an independent copy.
 
 ### A complete extractor example
 
