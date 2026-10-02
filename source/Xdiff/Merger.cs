@@ -77,14 +77,14 @@ public static class Merger
         FilePreparer.PrepareEnv(ancestor, ours, opts.Whitespace, opts.Algorithm, xe1);
         XdChange? xscr1 = MyersDiff.Run(xe1, opts.Algorithm, false);
 
-        var xe2 = new XdfEnv();
-        FilePreparer.PrepareEnv(ancestor, theirs, opts.Whitespace, opts.Algorithm, xe2);
-        XdChange? xscr2 = MyersDiff.Run(xe2, opts.Algorithm, false);
-
         if (xscr1 is null)
         {
             return new MergeResult(theirs.ToArray(), 0);
         }
+
+        var xe2 = new XdfEnv();
+        FilePreparer.PrepareEnv(ancestor, theirs, opts.Whitespace, opts.Algorithm, xe2);
+        XdChange? xscr2 = MyersDiff.Run(xe2, opts.Algorithm, false);
 
         if (xscr2 is null)
         {
@@ -152,15 +152,15 @@ public static class Merger
         FilePreparer.PrepareEnv(ancestor, ours, opts.Whitespace, opts.Algorithm, xe1);
         XdChange? xscr1 = MyersDiff.Run(xe1, opts.Algorithm, false);
 
-        var xe2 = new XdfEnv();
-        FilePreparer.PrepareEnv(ancestor, theirs, opts.Whitespace, opts.Algorithm, xe2);
-        XdChange? xscr2 = MyersDiff.Run(xe2, opts.Algorithm, false);
-
         if (xscr1 is null)
         {
             writer.Write(theirs.Span);
             return 0;
         }
+
+        var xe2 = new XdfEnv();
+        FilePreparer.PrepareEnv(ancestor, theirs, opts.Whitespace, opts.Algorithm, xe2);
+        XdChange? xscr2 = MyersDiff.Run(xe2, opts.Algorithm, false);
 
         if (xscr2 is null)
         {
@@ -197,10 +197,40 @@ public static class Merger
         string theirs,
         MergeOptions? options = null)
     {
-        byte[] ancestorBytes = Encoding.UTF8.GetBytes(ancestor);
-        byte[] ourBytes = Encoding.UTF8.GetBytes(ours);
-        byte[] theirBytes = Encoding.UTF8.GetBytes(theirs);
-        MergeResult result = Merge(ancestorBytes, ourBytes, theirBytes, options);
-        return Encoding.UTF8.GetString(result.Content);
+        int ancestorByteCount = Encoding.UTF8.GetByteCount(ancestor);
+        int ourByteCount = Encoding.UTF8.GetByteCount(ours);
+        int theirByteCount = Encoding.UTF8.GetByteCount(theirs);
+        byte[] ancestorBytes = ArrayPool<byte>.Shared.Rent(ancestorByteCount);
+        byte[]? ourBytes = null;
+        byte[]? theirBytes = null;
+
+        try
+        {
+            ourBytes = ArrayPool<byte>.Shared.Rent(ourByteCount);
+            theirBytes = ArrayPool<byte>.Shared.Rent(theirByteCount);
+            int ancestorBytesWritten = Encoding.UTF8.GetBytes(ancestor, ancestorBytes);
+            int ourBytesWritten = Encoding.UTF8.GetBytes(ours, ourBytes);
+            int theirBytesWritten = Encoding.UTF8.GetBytes(theirs, theirBytes);
+
+            using var writer = new PooledByteBufferWriter();
+            Merge(writer,
+                ancestorBytes.AsMemory(0, ancestorBytesWritten),
+                ourBytes.AsMemory(0, ourBytesWritten),
+                theirBytes.AsMemory(0, theirBytesWritten), options);
+            return Encoding.UTF8.GetString(writer.WrittenSpan);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(ancestorBytes);
+            if (ourBytes is not null)
+            {
+                ArrayPool<byte>.Shared.Return(ourBytes);
+            }
+
+            if (theirBytes is not null)
+            {
+                ArrayPool<byte>.Shared.Return(theirBytes);
+            }
+        }
     }
 }

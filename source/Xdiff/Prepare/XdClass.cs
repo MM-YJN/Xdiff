@@ -32,6 +32,8 @@ internal readonly struct XdClass
 
     public ReadOnlyMemory<byte> Line { get; init; }
 
+    public int Next { get; init; }
+
     public int Idx { get; init; }
 
     public int Len1 { get; init; }

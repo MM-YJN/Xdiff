@@ -30,7 +30,7 @@ namespace Xdiff.Prepare;
 
 internal sealed class XdClassifier(WhitespaceMode flags, int estimatedClasses)
 {
-    private readonly Dictionary<ulong, List<int>> _classes = new(estimatedClasses);
+    private readonly Dictionary<ulong, int> _classes = new(estimatedClasses);
 
     private readonly List<XdClass> _records = new(estimatedClasses);
 
@@ -42,16 +42,11 @@ internal sealed class XdClassifier(WhitespaceMode flags, int estimatedClasses)
     {
         ReadOnlySpan<byte> lineSpan = line.Span;
 
-        if (!_classes.TryGetValue(rawHash, out List<int>? bucket))
-        {
-            bucket = [];
-            _classes[rawHash] = bucket;
-        }
+        int head = _classes.TryGetValue(rawHash, out int index) ? index : -1;
 
-        // Buckets hold indices into _records: XdClass is now a struct, so
-        // updating Len1/Len2 requires a with-copy written back to the same
-        // slot (a foreach over the structs would mutate copies).
-        foreach (int idx in bucket)
+        // Hash buckets are chains of indices into the record storage. Keep
+        // comparing bytes: distinct line classes can share the same hash.
+        for (int idx = head; idx >= 0; idx = _records[idx].Next)
         {
             XdClass c = _records[idx];
             if (RecordMatch.RecordsEqual(c.Line.Span, lineSpan, flags))
@@ -66,13 +61,14 @@ internal sealed class XdClassifier(WhitespaceMode flags, int estimatedClasses)
         var newClass = new XdClass
         {
             Ha = rawHash,
+            Next = head,
             Line = line,
             Idx = _records.Count,
             Len1 = pass == 1 ? 1 : 0,
             Len2 = pass == 1 ? 0 : 1,
         };
 
-        bucket.Add(_records.Count);
+        _classes[rawHash] = _records.Count;
         _records.Add(newClass);
         return newClass;
     }

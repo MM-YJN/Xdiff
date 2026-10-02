@@ -5,6 +5,72 @@ namespace Xdiff.UnitTests;
 
 public class MergeTests
 {
+    [Theory]
+    [InlineData(MergeStyle.Merge)]
+    [InlineData(MergeStyle.Diff3)]
+    [InlineData(MergeStyle.ZealousDiff3)]
+    public void Merge_StringOverload_EncodingAndPoolReuse_MatchesByteOverload(MergeStyle style)
+    {
+        var options = new MergeOptions
+        {
+            Style = style,
+            OurLabel = "私たち",
+            TheirLabel = "café",
+            AncestorLabel = "base",
+        };
+        (string Ancestor, string Ours, string Theirs)[] cases =
+        [
+            ("a\n", "私たち\n", "café\n"),
+            ("a\r\nb", "a\r\n私たち", "a\r\ncafé"),
+            ("", "", ""),
+            ("a\n", "a\n", "😀\n"),
+            ("a\n", "😀\n", "a\n"),
+            ("x", "\uD800", "\uDC00"),
+            ("", "ours", "theirs"),
+        ];
+
+        // Repeat with changing input sizes to exercise reuse of oversized rentals.
+        for (int repeat = 0; repeat < 3; repeat++)
+        {
+            foreach ((string? ancestor, string? ours, string? theirs) in cases)
+            {
+                MergeResult expected = Merger.Merge(Encoding.UTF8.GetBytes(ancestor),
+                    Encoding.UTF8.GetBytes(ours), Encoding.UTF8.GetBytes(theirs), options);
+                Assert.Equal(Encoding.UTF8.GetString(expected.Content), Merger.Merge(ancestor, ours, theirs, options));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(null, "", "")]
+    [InlineData("", null, "")]
+    [InlineData("", "", null)]
+    public void Merge_StringOverload_NullInput_Throws(string? ancestor, string? ours, string? theirs)
+        => Assert.Throws<ArgumentNullException>(() => Merger.Merge(ancestor!, ours!, theirs!));
+
+    [Theory]
+    [InlineData(DiffAlgorithm.Myers)]
+    [InlineData(DiffAlgorithm.Minimal)]
+    [InlineData(DiffAlgorithm.Patience)]
+    [InlineData(DiffAlgorithm.Histogram)]
+    public void Merge_WhitespaceEquivalentOurs_PreservesTheirsAndOutputOwnership(DiffAlgorithm algorithm)
+    {
+        byte[] ancestor = "a b\n"u8.ToArray();
+        byte[] ours = "ab\n"u8.ToArray();
+        byte[] theirs = [0xff, 0, 13, 10, 0xfe];
+        var options = new MergeOptions { Algorithm = algorithm, Whitespace = WhitespaceMode.IgnoreAll };
+
+        MergeResult result = Merger.Merge(ancestor, ours, theirs, options);
+        Assert.Equal(0, result.ConflictCount);
+        Assert.Equal(theirs, result.Content);
+        Assert.NotSame(theirs, result.Content);
+
+        var writer = new ArrayBufferWriter<byte>();
+        writer.Write("prefix"u8);
+        Assert.Equal(0, Merger.Merge(writer, ancestor, ours, theirs, options));
+        Assert.Equal((byte[])[.. "prefix"u8, .. theirs], writer.WrittenSpan.ToArray());
+    }
+
     [Fact]
     public void Merge_NoOp_BothSidesIdenticalToAncestor_ReturnsAncestor()
     {

@@ -1,3 +1,5 @@
+using System.Text;
+
 using Xdiff.Prepare;
 using Xdiff.Util;
 
@@ -116,6 +118,30 @@ public class XdClassifierTests
         cf.ClassifyRecord(1, b, HashLine(b, WhitespaceMode.None));
 
         Assert.Equal(clsA.Idx, cf.GetClass(0).Idx);
+    }
+
+    [Fact]
+    public void ClassifyRecord_CollisionChain_PreservesClassesAndCountsAfterGrowth()
+    {
+        var cf = new XdClassifier(WhitespaceMode.None, 1);
+        byte[][] lines = Enumerable.Range(0, 128)
+            .Select(i => Encoding.UTF8.GetBytes($"line {i}\n")).ToArray();
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            Assert.Equal(i, cf.ClassifyRecord(1, lines[i], 42UL).Idx);
+        }
+
+        // Revisit every link after growing the record storage, updating both passes.
+        for (int i = 0; i < lines.Length; i++)
+        {
+            Assert.Equal(i, cf.ClassifyRecord(2, lines[i], 42UL).Idx);
+            Assert.Equal(i, cf.ClassifyRecord(1, lines[i], 42UL).Idx);
+            Assert.Equal(2, cf.GetClass(i).Len1);
+            Assert.Equal(1, cf.GetClass(i).Len2);
+        }
+
+        Assert.Equal(lines.Length, cf.Count);
     }
 
     private static ulong HashLine(byte[] line, WhitespaceMode flags)
