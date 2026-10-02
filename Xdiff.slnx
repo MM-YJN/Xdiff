@@ -5,4 +5,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Xdiff.UnitTests/Xdiff.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Xdiff.Benchmarks/Xdiff.Benchmarks.csproj" />
+  </Folder>
 </Solution>
